@@ -15,37 +15,51 @@ if [[ $submission == "student-submission/ListExamples.java" ]]
         cp -r $submission grading-area
     else
         echo "Incorrect file submitted"
+        echo "You failed... :(, 0%"
         exit
 fi
 
 echo $submission
 
 cp TestListExamples.java grading-area
+cp -r lib grading-area
+
 
 cd grading-area
+ls 
 
-javac ListExamples.java TestListExamples.java > error.txt
-cat error.txt
-errorCode=`cat error.txt`
-
-
-echo $errorCode
+javac -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar *.java 2> error.txt
 
 
-if [[ $errorCode == "" ]]
-    then 
-        echo "Finished Compiling" 
-        javac -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar *.java
-        java -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar org.junit.runner.JUnitCore TestListExamples
+errorCode=`echo $?`
 
+ if [[ $errorCode -eq 0 ]]
+     then 
+         echo "Finished Compiling" 
+         java -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar org.junit.runner.JUnitCore TestListExamples > results.txt
+         
+
+     else
+         echo "ERROR: Did not compile!"
+         echo "You failed... :(, 0%"
+         exit
+ fi
+
+grade=`grep OK results.txt`
+# after the given string it find any digit between 0-9 and awk saves the value at that column
+tests=`grep -o 'Tests run: \([0-9]*\)' results.txt | awk '{print $3}'` 
+failure=`grep -o 'Failures: \([0-9]*\)' results.txt | awk '{print $2}'`
+
+
+# echo "Test run: 4, Failures: 1" | grep -oP 'Test run: \K\d+' && echo " " && echo "Test run: 4, Failures: 1" | grep -oP 'Failures: \K\d+'
+
+if [[ $grade != "OK (1 test)" ]]
+    then
+        grade=`echo "($tests-$failure)/$tests*100"| bc`
+        echo "You got $grade%"
     else
-        echo "ERROR: Did not compile!"
-        exit
-fi
-
-
-
-
+        echo "CONGRATS! U GOT 100% :)"
+fi 
 
 
 # Draw a picture/take notes on the directory structure that's set up after
